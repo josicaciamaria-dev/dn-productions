@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>GameHub GOD</title>
+
+<style>
+
+body{
+margin:0;
+font-family:Segoe UI;
+background:#0a0b10;
+color:white;
+display:flex;
+}
+
+.sidebar{
+width:220px;
+background:#0f1117;
+height:100vh;
+padding:15px;
+box-shadow:0 0 15px black;
+}
+
+.logo{
+font-size:20px;
+margin-bottom:20px;
+}
+
+.menu{
+background:#151821;
+padding:10px;
+margin:5px 0;
+border-radius:8px;
+cursor:pointer;
+}
+
+.menu:hover{
+background:#5865f2;
+}
+
+.main{
+flex:1;
+padding:20px;
+}
+
+.page{
+display:none;
+}
+
+.active{
+display:block;
+}
+
+.card{
+background:#151821;
+width:260px;
+margin:10px;
+border-radius:10px;
+overflow:hidden;
+box-shadow:0 0 10px black;
+padding:10px;
+}
+
+.games{
+display:flex;
+flex-wrap:wrap;
+}
+
+input,textarea{
+width:300px;
+padding:10px;
+margin:5px;
+background:#1f2330;
+border:none;
+border-radius:6px;
+color:white;
+}
+
+button{
+background:#5865f2;
+border:none;
+padding:10px;
+border-radius:6px;
+color:white;
+cursor:pointer;
+margin:2px;
+}
+
+.play{
+background:#22c55e;
+}
+
+.delete{
+background:#ef4444;
+}
+
+iframe{
+width:100%;
+height:100%;
+border:none;
+}
+
+.player{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:black;
+display:none;
+}
+
+.close{
+position:absolute;
+top:10px;
+right:10px;
+}
+
+.canvas{
+background:black;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="sidebar">
+
+<div class="logo">
+🎮 GameHub GOD
+</div>
+
+<div class="menu"
+onclick="openPage('library')">
+Library
+</div>
+
+<div class="menu"
+onclick="openPage('publish')">
+Publish
+</div>
+
+<div class="menu"
+onclick="openPage('engine')">
+Engine
+</div>
+
+<div class="menu"
+onclick="resetDB()">
+Reset
+</div>
+
+</div>
+
+<div class="main">
+
+<div id="library"
+class="page active">
+
+<h1>Library</h1>
+
+<input id="search"
+placeholder="Search"
+onkeyup="search()">
+
+<div class="games"
+id="games">
+</div>
+
+</div>
+
+<div id="publish"
+class="page">
+
+<h1>Publish Game</h1>
+
+<input id="title"
+placeholder="Title">
+
+<input id="dev"
+placeholder="Developer">
+
+<textarea id="desc"
+placeholder="Description">
+</textarea>
+
+<input id="tags"
+placeholder="Tags">
+
+<input type="file"
+id="file">
+
+<br>
+
+<button onclick="publish()">
+Publish
+</button>
+
+</div>
+
+<div id="engine"
+class="page">
+
+<h1>Mini Engine</h1>
+
+<p>Simple canvas test engine</p>
+
+<canvas
+id="canvas"
+width="600"
+height="400"
+class="canvas">
+</canvas>
+
+<br>
+
+<button onclick="spawn()">
+Spawn cube
+</button>
+
+<button onclick="clearCanvas()">
+Clear
+</button>
+
+</div>
+
+</div>
+
+<div class="player"
+id="player">
+
+<button class="close"
+onclick="closePlayer()">
+Close
+</button>
+
+<iframe id="frame"></iframe>
+
+</div>
+
+<script>
+
+let games=[]
+let gamesDiv
+
+function openPage(id){
+
+document
+.querySelectorAll(".page")
+.forEach(p=>
+p.classList.remove("active")
+)
+
+document
+.getElementById(id)
+.classList.add("active")
+
+}
+
+function load(){
+
+gamesDiv=
+document.getElementById("games")
+
+let data=
+localStorage.getItem("games")
+
+if(data)
+games=JSON.parse(data)
+
+render(games)
+
+}
+
+function save(){
+
+localStorage.setItem(
+"games",
+JSON.stringify(games)
+)
+
+}
+
+function publish(){
+
+let fileInput=
+document.getElementById("file")
+
+let file=
+fileInput.files[0]
+
+if(!file)return
+
+let url=
+URL.createObjectURL(file)
+
+games.push({
+
+title:title.value,
+
+dev:dev.value,
+
+desc:desc.value,
+
+tags:tags.value,
+
+file:url,
+
+rating:0,
+
+comments:[]
+
+})
+
+save()
+
+render(games)
+
+title.value=""
+dev.value=""
+desc.value=""
+tags.value=""
+fileInput.value=""
+
+}
+
+function render(list){
+
+gamesDiv.innerHTML=""
+
+list.forEach((g,i)=>{
+
+gamesDiv.innerHTML+=`
+
+<div class="card">
+
+<h3>${g.title}</h3>
+
+<p>${g.desc}</p>
+
+<small>${g.dev}</small>
+
+<br><br>
+
+<button class="play"
+onclick="play(${i})">
+Play
+</button>
+
+<button onclick="rate(${i})">
+⭐ ${g.rating}
+</button>
+
+<button onclick="commentUI(${i})">
+💬
+</button>
+
+<button class="delete"
+onclick="remove(${i})">
+Delete
+</button>
+
+<div>
+
+${
+g.comments.map(c=>
+`<p>${c}</p>`
+).join("")
+}
+
+</div>
+
+</div>
+
+`
+
+})
+
+}
+
+function play(i){
+
+frame.src=games[i].file
+
+player.style.display="block"
+
+}
+
+function closePlayer(){
+
+player.style.display="none"
+
+frame.src=""
+
+}
+
+function remove(i){
+
+games.splice(i,1)
+
+save()
+
+render(games)
+
+}
+
+function rate(i){
+
+games[i].rating++
+
+save()
+
+render(games)
+
+}
+
+function commentUI(i){
+
+let text=
+prompt("Comment")
+
+if(!text)return
+
+games[i].comments.push(text)
+
+save()
+
+render(games)
+
+}
+
+function search(){
+
+let text=
+document
+.getElementById("search")
+.value
+.toLowerCase()
+
+let filtered=
+games.filter(g=>
+
+g.title.toLowerCase()
+.includes(text)
+
+||
+
+g.tags.toLowerCase()
+.includes(text)
+
+)
+
+render(filtered)
+
+}
+
+function resetDB(){
+
+if(confirm("Reset database?")){
+
+localStorage.clear()
+
+location.reload()
+
+}
+
+}
+
+/* MINI ENGINE */
+
+let ctx=
+document
+.getElementById("canvas")
+.getContext("2d")
+
+let cubes=[]
+
+function spawn(){
+
+cubes.push({
+
+x:Math.random()*500,
+y:Math.random()*300
+
+})
+
+draw()
+
+}
+
+function draw(){
+
+ctx.clearRect(0,0,600,400)
+
+cubes.forEach(c=>{
+
+ctx.fillStyle="cyan"
+
+ctx.fillRect(c.x,c.y,40,40)
+
+})
+
+}
+
+function clearCanvas(){
+
+cubes=[]
+
+draw()
+
+}
+
+load()
+
+</script>
+
+</body>
+
+</html>
